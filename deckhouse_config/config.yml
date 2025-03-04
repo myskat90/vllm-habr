@@ -1,0 +1,176 @@
+# Общие параметры кластера.
+# https://deckhouse.ru/products/kubernetes-platform/documentation/v1/installing/configuration.html#clusterconfiguration
+apiVersion: deckhouse.io/v1
+kind: ClusterConfiguration
+clusterType: Static
+# Адресное пространство подов кластера.
+podSubnetCIDR: 10.111.0.0/16
+# Адресное пространство сети сервисов кластера.
+serviceSubnetCIDR: 10.222.0.0/16
+kubernetesVersion: "1.30"
+# Домен кластера.
+clusterDomain: "cluster.local"
+---
+# Настройки первичной инициализации кластера Deckhouse.
+# https://deckhouse.ru/products/kubernetes-platform/documentation/v1/installing/configuration.html#initconfiguration
+apiVersion: deckhouse.io/v1
+kind: InitConfiguration
+deckhouse:
+  # Адрес Docker registry с образами Deckhouse
+  imagesRepo: registry.deckhouse.ru/deckhouse/ee
+  # Строка с ключом для доступа к Docker registry (сгенерировано автоматически для вашего токена доступа)
+  registryDockerCfg: "license_key"
+---
+# Настройки модуля deckhouse.
+# https://deckhouse.ru/products/kubernetes-platform/documentation/v1/modules/002-deckhouse/configuration.html
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: deckhouse
+spec:
+  version: 1
+  enabled: true
+  settings:
+    bundle: Default
+    releaseChannel: Stable
+    logLevel: Info
+---
+# Глобальные настройки Deckhouse.
+# https://deckhouse.ru/products/kubernetes-platform/documentation/v1/deckhouse-configure-global.html#%D0%BF%D0%B0%D1%80%D0%B0%D0%BC%D0%B5%D1%82%D1%80%D1%8B
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: global
+spec:
+  version: 1
+  settings:
+    defaultClusterStorageClass: "ceph-rbd-sc"
+    modules:
+      # Шаблон, который будет использоваться для составления адресов системных приложений в кластере.
+      # Например, Grafana для %s.k8s.apiac.ru будет доступна на домене 'grafana.k8s.apiac.ru'.
+      # Домен НЕ ДОЛЖЕН совпадать с указанным в параметре clusterDomain ресурса ClusterConfiguration.
+      # Можете изменить на свой сразу, либо следовать шагам руководства и сменить его после установки.
+      publicDomainTemplate: "%s.k8s.apiac.ru"
+      placement:
+        customTolerationKeys:
+          - dedicated.apiac.ru
+      ingressClass: system-ingress
+      https:
+        certManager:
+          clusterIssuerName: inter-ca
+        mode: CertManager
+---
+# Настройки модуля user-authn.
+# https://deckhouse.ru/products/kubernetes-platform/documentation/v1/modules/150-user-authn/configuration.html
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: user-authn
+spec:
+  version: 2
+  enabled: true
+  settings:
+    controlPlaneConfigurator:
+      dexCAMode: DoNotNeed
+    # Включение доступа к API-серверу Kubernetes через Ingress.
+    # https://deckhouse.ru/products/kubernetes-platform/documentation/v1/modules/150-user-authn/configuration.html#parameters-publishapi
+    publishAPI:
+      enabled: true
+      https:
+        mode: Global
+        global:
+          kubeconfigGeneratorMasterCA: ""
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: csi-ceph
+spec:
+  enabled: true
+---
+# Настройки модуля cni-cilium.
+# https://deckhouse.ru/products/kubernetes-platform/documentation/v1/modules/021-cni-cilium/configuration.html
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: cni-cilium
+spec:
+  version: 1
+  # Включить модуль cni-cilium
+  enabled: true
+  settings:
+    # Настройки модуля cni-cilium
+    # https://deckhouse.ru/products/kubernetes-platform/documentation/v1/modules/021-cni-cilium/configuration.html
+    tunnelMode: VXLAN
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: cert-manager
+spec:
+  enabled: true
+  settings:
+    enableCAInjector: true
+    disableLetsencrypt: true
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: multitenancy-manager
+spec:
+  enabled: true
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: runtime-audit-engine
+spec:
+  enabled: true
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: operator-trivy
+spec:
+  enabled: true
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: metallb
+spec:
+  version: 2
+  enabled: true
+  settings:
+    speaker:
+      nodeSelector:
+        node-role.deckhouse.io/metallb: ""
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: console
+spec:
+  enabled: true
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: ModuleConfig
+metadata:
+  name: ingress-nginx
+spec:
+  version: 1
+  enabled: true
+  settings:
+    defaultControllerVersion: "1.10"
+    highAvailability: true
+---
+# Параметры статического кластера.
+# https://deckhouse.ru/products/kubernetes-platform/documentation/v1/installing/configuration.html#staticclusterconfiguration
+apiVersion: deckhouse.io/v1
+kind: StaticClusterConfiguration
+# Список внутренних сетей узлов кластера (например, '10.0.4.0/24'), который
+# используется для связи компонентов Kubernetes (kube-apiserver, kubelet...) между собой.
+# Укажите, если используете модуль virtualization или узлы кластера имеют более одного сетевого интерфейса.
+# Если на узлах кластера используется только один интерфейс, ресурс StaticClusterConfiguration можно не создавать.
+internalNetworkCIDRs:
+  - 192.168.2.0/23

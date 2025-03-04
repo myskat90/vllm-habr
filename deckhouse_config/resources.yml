@@ -1,0 +1,600 @@
+# Секция, описывающая параметры инстанс-класса для узлов c компонентами, обеспечивающими рабочую нагрузку.
+# https://deckhouse.ru/documentation/v1/modules/030-cloud-provider-openstack/cr.html
+# apiVersion: deckhouse.io/v1alpha1
+# kind: LocalPathProvisioner
+# metadata:
+#   name: localpath
+# spec:
+#   path: "/opt/local-path-provisioner"
+#   reclaimPolicy: Delete
+apiVersion: storage.deckhouse.io/v1alpha1
+kind: CephClusterConnection
+metadata:
+  name: ceph-cluster-pve
+spec:
+  clusterID: <id cluster>
+  monitors:
+    - 192.168.2.3:6789
+    - 192.168.2.5:6789
+    - 192.168.2.21:6789
+---
+apiVersion: storage.deckhouse.io/v1alpha1
+kind: CephClusterAuthentication
+metadata:
+  name: ceph-auth-pve
+spec:
+  userID: k8s.main
+  userKey: <user_key>
+---
+apiVersion: storage.deckhouse.io/v1alpha1
+kind: CephClusterAuthentication
+metadata:
+  name: ceph-auth-pve-fs
+spec:
+  userID: fs.k8s.main
+  userKey: <user_key>
+---
+apiVersion: storage.deckhouse.io/v1alpha1
+kind: CephClusterAuthentication
+metadata:
+  name: ceph-auth-pve-fs-nvme
+spec:
+  userID: fs-nvme.k8s.main
+  userKey: <user_key>
+---
+apiVersion: storage.deckhouse.io/v1alpha1
+kind: CephStorageClass
+metadata:
+  name: ceph-rbd-sc
+spec:
+  clusterConnectionName: ceph-cluster-pve
+  clusterAuthenticationName: ceph-auth-pve
+  reclaimPolicy: Delete
+  type: RBD
+  rbd:
+    defaultFSType: ext4
+    pool: rbd-k8s-main-nvme
+---
+apiVersion: storage.deckhouse.io/v1alpha1
+kind: CephStorageClass
+metadata:
+  name: ceph-fs-sc
+spec:
+  clusterConnectionName: ceph-cluster-pve
+  clusterAuthenticationName: ceph-auth-pve-fs
+  reclaimPolicy: Delete
+  type: CephFS
+  cephFS:
+    fsName: cephfs
+---
+apiVersion: storage.deckhouse.io/v1alpha1
+kind: CephStorageClass
+metadata:
+  name: ceph-fs-nvme-sc
+spec:
+  clusterConnectionName: ceph-cluster-pve
+  clusterAuthenticationName: ceph-auth-pve-fs-nvme
+  reclaimPolicy: Delete
+  type: CephFS
+  cephFS:
+    fsName: cephfs-nvme
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: LocalPathProvisioner
+metadata:
+  name: localpath-db-rel
+spec:
+  nodeGroups:
+    - w-db
+  path: "/data/zdata-relational"
+  reclaimPolicy: Delete
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: LocalPathProvisioner
+metadata:
+  name: localpath-db-col
+spec:
+  nodeGroups:
+    - w-db
+  path: "/data/zdata-columnar"
+  reclaimPolicy: Delete
+---
+apiVersion: deckhouse.io/v1
+kind: NodeGroup
+metadata:
+  name: w-gpu
+spec:
+  nodeTemplate:
+    labels:
+      node.deckhouse.io/group: w-gpu
+    taints:
+      - effect: NoExecute
+        key: dedicated.apiac.ru
+        value: w-gpu
+  chaos:
+    mode: Disabled
+  disruptions:
+    approvalMode: Automatic
+  staticInstances:
+    count: 2
+    labelSelector:
+      matchLabels:
+        role: worker
+        type: w-gpu
+  nodeType: Static
+---
+apiVersion: deckhouse.io/v1
+kind: NodeGroup
+metadata:
+  name: w-gpu-3060
+spec:
+  nodeTemplate:
+    labels:
+      node.deckhouse.io/group: w-gpu-3060
+    taints:
+      - effect: NoExecute
+        key: dedicated.apiac.ru
+        value: w-gpu
+  chaos:
+    mode: Disabled
+  disruptions:
+    approvalMode: Automatic
+  staticInstances:
+    count: 2
+    labelSelector:
+      matchLabels:
+        role: worker
+        type: w-gpu-3060
+  nodeType: Static
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: NodeGroupConfiguration
+metadata:
+  name: containerd-additional-config.sh
+spec:
+  bundles:
+    - '*'
+  content: |
+    # Copyright 2023 Flant JSC
+    #
+    # Licensed under the Apache License, Version 2.0 (the "License");
+    # you may not use this file except in compliance with the License.
+    # You may obtain a copy of the License at
+    #
+    #     http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing, software
+    # distributed under the License is distributed on an "AS IS" BASIS,
+    # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    # See the License for the specific language governing permissions and
+    # limitations under the License.
+
+    mkdir -p /etc/containerd/conf.d
+    bb-sync-file /etc/containerd/conf.d/nvidia_gpu.toml - << "EOF"
+    [plugins]
+      [plugins."io.containerd.grpc.v1.cri"]
+        [plugins."io.containerd.grpc.v1.cri".containerd]
+          default_runtime_name = "nvidia"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+                privileged_without_host_devices = false
+                runtime_engine = ""
+                runtime_root = ""
+                runtime_type = "io.containerd.runc.v1"
+                [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+                  BinaryName = "/usr/bin/nvidia-container-runtime"
+                  SystemdCgroup = false
+    EOF
+  nodeGroups:
+    - w-gpu
+    - w-gpu-3060
+  weight: 31
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: NodeGroupConfiguration
+metadata:
+  name: install-cuda.sh
+spec:
+  bundles:
+    - ubuntu-lts
+  content: |
+    # Copyright 2023 Flant JSC
+    #
+    # Licensed under the Apache License, Version 2.0 (the "License");
+    # you may not use this file except in compliance with the License.
+    # You may obtain a copy of the License at
+    #
+    #     http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing, software
+    # distributed under the License is distributed on an "AS IS" BASIS,
+    # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    # See the License for the specific language governing permissions and
+    # limitations under the License.
+
+    if [ ! -f "/etc/apt/sources.list.d/nvidia-container-toolkit.list" ]; then
+      distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+      curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
+      curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+      sudo apt update
+    fi
+    bb-apt-install nvidia-container-toolkit nvidia-driver-535-server
+    nvidia-ctk config --set nvidia-container-runtime.log-level=error --in-place
+  nodeGroups:
+    - w-gpu
+    - w-gpu-3060
+  weight: 30
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: NodeGroupConfiguration
+metadata:
+  name: add-gitlab-registry-cert
+spec:
+  bundles:
+    - '*'
+  content: |-
+    #!/bin/bash
+    # Скрипт для добавления сертификата реестра в доверенные сертификаты containerd
+
+    REGISTRY_URL="gitlab.ap.com:5050"
+    CERT_FILE_NAME="gitlab.ap.com.crt"
+    CERTS_FOLDER="/etc/containerd/certs.d/${REGISTRY_URL}/"
+    SYSTEM_CERTS_FOLDER="/usr/local/share/ca-certificates/"
+
+    # Создаем директорию для сертификата
+    mkdir -p "${CERTS_FOLDER}"
+
+    # Добавляем сертификат в директорию containerd
+    cat <<"EOF" > "${CERTS_FOLDER}/${CERT_FILE_NAME}"
+    -----BEGIN CERTIFICATE-----
+    <CERT>
+    -----END CERTIFICATE-----
+    EOF
+
+    # Добавляем сертификат в системные доверенные сертификаты
+    cat <<"EOF" > "${SYSTEM_CERTS_FOLDER}/${CERT_FILE_NAME}"
+    -----BEGIN CERTIFICATE-----
+    <CERT>
+    -----END CERTIFICATE-----
+    EOF
+
+    # Обновляем системные сертификаты
+    update-ca-certificates
+
+    # Перезапускаем containerd для применения изменений
+    systemctl restart containerd-deckhouse.service
+  nodeGroups:
+    - "*"
+  weight: 101
+---
+apiVersion: deckhouse.io/v1
+kind: NodeGroup
+metadata:
+  name: w-std
+spec:
+  nodeTemplate:
+    labels:
+      node-role.deckhouse.io/metallb: ""
+      node-role/commander: ""
+      node.deckhouse.io/group: w-std
+      nvidia.com/gpu.deploy.operands: "false"
+  nodeType: Static
+  staticInstances:
+    count: 6
+    labelSelector:
+      matchLabels:
+        role: worker
+        type: standard
+---
+apiVersion: deckhouse.io/v1
+kind: NodeGroup
+metadata:
+  name: w-db
+spec:
+  nodeTemplate:
+    labels:
+      node-role.deckhouse.io/metallb: ""
+      node-role/commander: ""
+      node.deckhouse.io/group: w-db
+      storage-type/localpath-db-rel: ""
+      storage-type/localpath-db-col: ""
+      nvidia.com/gpu.deploy.operands: "false"
+    taints:
+      - effect: NoExecute
+        key: dedicated.apiac.ru
+        value: w-db
+  nodeType: Static
+  staticInstances:
+    count: 3
+    labelSelector:
+      matchLabels:
+        role: worker
+        type: w-db
+apiVersion: deckhouse.io/v1alpha1
+kind: SSHCredentials
+metadata:
+  name: caps
+spec:
+  user: caps
+  privateSSHKey: "SSH_KEY"
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w1.apiac.ru
+  labels:
+    role: worker
+    type: standard
+spec:
+  address: "192.168.3.61"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w2.apiac.ru
+  labels:
+    role: worker
+    type: standard
+spec:
+  address: "192.168.3.62"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w3.apiac.ru
+  labels:
+    role: worker
+    type: standard
+spec:
+  address: "192.168.3.63"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w4.apiac.ru
+  labels:
+    role: worker
+    type: standard
+spec:
+  address: "192.168.3.57"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w5.apiac.ru
+  labels:
+    role: worker
+    type: standard
+spec:
+  address: "192.168.3.58"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w6.apiac.ru
+  labels:
+    role: worker
+    type: standard
+spec:
+  address: "192.168.3.59"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w1-db.apiac.ru
+  labels:
+    role: worker
+    type: w-db
+spec:
+  address: "192.168.3.67"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w2-db.apiac.ru
+  labels:
+    role: worker
+    type: w-db
+spec:
+  address: "192.168.3.68"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w3-db.apiac.ru
+  labels:
+    role: worker
+    type: w-db
+spec:
+  address: "192.168.3.69"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w1-gpu.apiac.ru
+  labels:
+    role: worker
+    type: w-gpu
+spec:
+  address: "192.168.3.54"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w2-gpu.apiac.ru
+  labels:
+    role: worker
+    type: w-gpu
+spec:
+  address: "192.168.3.55"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w3-gpu.apiac.ru
+  labels:
+    role: worker
+    type: w-gpu-3060
+spec:
+  address: "192.168.3.56"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: StaticInstance
+metadata:
+  name: k8s-w4-gpu.apiac.ru
+  labels:
+    role: worker
+    type: w-gpu
+spec:
+  address: "192.168.3.60"
+  credentialsRef:
+    kind: SSHCredentials
+    name: caps
+---
+apiVersion: deckhouse.io/v1
+kind: IngressNginxController
+metadata:
+  name: main
+spec:
+  enableIstioSidecar: true
+  ingressClass: system-ingress
+  inlet: LoadBalancer
+  maxReplicas: 3
+  chaosMonkey: true
+  nodeSelector:
+    node-role.deckhouse.io/metallb: ""
+  loadBalancer:
+    loadBalancerClass: system-ingress
+    annotations:
+      # metallb.universe.tf/ip-allocated-from-pool: frontend-pool
+      metallb.universe.tf/loadBalancerIPs: 192.168.3.70
+      # network.deckhouse.io/l2-load-balancer-external-ips-count: "3"
+---
+apiVersion: deckhouse.io/v1
+kind: IngressNginxController
+metadata:
+  name: external-ingress
+spec:
+  enableIstioSidecar: true
+  ingressClass: external-ingress
+  inlet: LoadBalancer
+  maxReplicas: 2
+  chaosMonkey: true
+  nodeSelector:
+    node-role.deckhouse.io/metallb: ""
+  loadBalancer:
+    loadBalancerClass: ext-ingress
+    annotations:
+      # metallb.universe.tf/ip-allocated-from-pool: ext-frontend-pool
+      metallb.universe.tf/loadBalancerIPs: 192.168.3.220
+      # network.deckhouse.io/l2-load-balancer-external-ips-count: "3"
+---
+apiVersion: network.deckhouse.io/v1alpha1
+kind: MetalLoadBalancerClass
+metadata:
+  name: system-ingress
+spec:
+  addressPool:
+    - 192.168.3.70-192.168.3.100
+  isDefault: false
+  nodeSelector:
+    node-role.deckhouse.io/metallb: "" # селектор узлов-балансировщиков
+  type: L2
+---
+apiVersion: network.deckhouse.io/v1alpha1
+kind: MetalLoadBalancerClass
+metadata:
+  name: ext-ingress
+spec:
+  addressPool:
+    - 192.168.3.210-192.168.3.220
+  isDefault: false
+  nodeSelector:
+    node-role.deckhouse.io/metallb: "" # селектор узлов-балансировщиков
+  type: L2
+---
+apiVersion: deckhouse.io/v1
+kind: ClusterAuthorizationRule
+metadata:
+  name: admin
+spec:
+  # список учётных записей Kubernetes RBAC
+  subjects:
+    - kind: User
+      name: admin@k8s.apiac.ru
+  # предустановленный шаблон уровня доступа
+  accessLevel: SuperAdmin
+  # разрешить пользователю делать kubectl port-forward
+  portForwarding: true
+---
+# секция, описывающая параметры статического пользователя
+# используемая версия API Deckhouse
+apiVersion: deckhouse.io/v1
+kind: User
+metadata:
+  name: admin
+spec:
+  # e-mail пользователя
+  email: admin@k8s.apiac.ru
+  # это хэш пароля cutoxubd8p, сгенерированного сейчас
+  # сгенерируйте свой или используйте этот, но только для тестирования
+  # echo "cutoxubd8p" | htpasswd -BinC 10 "" | cut -d: -f2 | base64 -w0
+  # возможно, захотите изменить
+  password: 'JDJhJDEwJDlycXJ3OFc2U3dtSFJkQ0RMNEx1ei5QLm9XYVRPaE5CcjRqbXh0ZWNzLkF6Sll3WllXdU02'
+#
+# Настройка TLS
+---
+apiVersion: v1
+data:
+  tls.crt: <CRT>
+  tls.key: <KEY>
+kind: Secret
+metadata:
+  name: internal-ca-key-pair
+  namespace: d8-cert-manager
+type: Opaque
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: inter-ca
+spec:
+  ca:
+    secretName: internal-ca-key-pair
