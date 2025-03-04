@@ -577,7 +577,7 @@ spec:
   # сгенерируйте свой или используйте этот, но только для тестирования
   # echo "cutoxubd8p" | htpasswd -BinC 10 "" | cut -d: -f2 | base64 -w0
   # возможно, захотите изменить
-  password: 'JDJhJDEwJDlycXJ3OFc2U3dtSFJkQ0RMNEx1ei5QLm9XYVRPaE5CcjRqbXh0ZWNzLkF6Sll3WllXdU02'
+  password: 'CRYPT_PWD'
 #
 # Настройка TLS
 ---
