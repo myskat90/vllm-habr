@@ -1,0 +1,20 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: check-nvidia-tf
+spec:
+  template:
+    spec:
+      containers:
+        - name: check-nvidia-tf
+          image: "tensorflow/tensorflow:2.11.0-gpu"
+          command:
+            - "python"
+            - "-c"
+            - "import tensorflow as tf;tf.test.gpu_device_name()"
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+      restartPolicy: Never
+  backoffLimit: 4

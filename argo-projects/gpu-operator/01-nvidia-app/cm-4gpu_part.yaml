@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: time-slicing-config
+  namespace: nvidia-gpu
+data:
+  default: |-
+    version: v1
+    flags:
+    migStrategy: "none"
+    failOnInitError: true
+    nvidiaDriverRoot: "/"
+    plugin:
+      passDeviceSpecs: false
+      deviceListStrategy: "envvar"
+      deviceIDStrategy: "uuid"
+    sharing:
+      timeSlicing:
+        renameByDefault: false
+        resources:
+        - name: nvidia.com/gpu
+          replicas: 2

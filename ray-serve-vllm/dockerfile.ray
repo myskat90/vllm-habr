@@ -1,0 +1,18 @@
+ARG RAY_IMAGE_VERSION
+FROM rayproject/ray:${RAY_IMAGE_VERSION}
+ARG VLLM_VERSION
+ARG home_dir="/home/ray"
+WORKDIR ${home_dir}
+
+# Install required packages
+RUN sudo apt-get update && sudo apt-get install -y zip python3-pip
+
+# Copy application files
+ADD ./serve.zip .
+
+# Install Python dependencies
+RUN pip install vllm==${VLLM_VERSION} \
+    && pip install httpx \
+    && pip install python-multipart \
+    && pip install PyJWT \
+    && pip freeze > requirements-new.txt

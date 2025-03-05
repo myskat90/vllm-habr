@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth-config
+  namespace: kuberay-projects
+type: Opaque
+data:
+  # JWT настройки
+  JWT_KEY: ZGVmYXVsdF9qd3RfS2V5        # "default_jwt_key"
+  ACCESS_TOKEN_EXPIRE_MINUTES: NjA=     # "60"
+  SKIP_EXP_CHECK: ZmFsc2U=              # "false"
+  HUGGING_FACE_HUB_TOKEN: ""
+  # Список пользователей (перечисленные псевдонимы, разделенные запятой)
+  USER_LIST: QUxJQ0UsIEJPQg==           # "ALICE, BOB"
+
+  # Данные для пользователя ALICE
+  ALICE_USERNAME: YWxpY2U=              # "alice"
+  ALICE_HASHED_PASSWORD: ZmFrZWhhc2hlZGhhc2g=  # пример (хэшированное значение)
+  ALICE_ROLE: YWRtaW4=                 # "admin"
+
+  # Данные для пользователя BOB
+  BOB_USERNAME: Ym9i                   # "bob"
+  BOB_HASHED_PASSWORD: ZmFrZWhhc2hlZGhhc2g=     # пример (хэшированное значение)
+  BOB_ROLE: Z3Vlc3Q=                   # "guest" или "user"

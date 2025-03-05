@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kuberay-operator-crds
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://<gitlab-changeme>/it-operations/k8s-config'
+      path: 'argo-projects/kube-ray/charts/kuberay-operator/crds'
+      targetRevision: master
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: kuberay-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - Replace=true
+      - CreateNamespace=true

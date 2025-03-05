@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gpu-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://<gitlab-changeme>/it-operations/k8s-config'
+      path: 'argo-projects/gpu-operator/manifests'
+      targetRevision: master
+    - repoURL: 'https://<gitlab-changeme>/it-operations/k8s-config'
+      path: 'argo-projects/gpu-operator/charts/gpu-operator'
+      targetRevision: master
+      helm:
+        valueFiles:
+          - ap-values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: gpu-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
