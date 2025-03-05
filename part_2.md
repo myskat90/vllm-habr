@@ -1,4 +1,4 @@
-## Часть 2: Настройка Kubernetes, добавление GPU-узлов, установка gpu operator и kuberay operator
+# Часть 2: Настройка Kubernetes, добавление GPU-узлов, установка gpu operator и kuberay operator
 
 В этом разделе мы устанавливаем Kubernetes-кластер с помощью Deckhouse и настраиваем узлы с поддержкой GPU.
 Более того, здесь даны подробные комментарии к YAML-файлам конфигурации (config.yml и resources.yml).
