@@ -78,6 +78,8 @@ dhctl bootstrap --ssh-user=root --ssh-host=192.168.3.51 --ssh-agent-private-keys
 - 3 Worker-нод для баз данных (w-db)
 - 4 GPU-нод (w-gpu, w-gpu-3060)
 
+![Deckhouse Cluster](img/deckhouse_cluster.png)
+
 -----------------------------------------------------------------------------
 
 ## Установка и настройка kuberay поверх k8s
