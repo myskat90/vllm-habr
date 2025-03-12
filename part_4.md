@@ -181,11 +181,90 @@ additionalWorkerGroups:
 
 -----------------------------------------------------------------------------
 
-## Подключение модели Dolphin3.0
 
-Запускаем модель **Dolphin3.0** (она показалась более стабильной).
-При помощи Ray Application указываем нужный `MODEL_ID` и настройки параллелизации (tensor/pipeline), а после успешного деплоя
-видим в Ray Dashboard, что приложение запущено и готово к инференсу.
+
+# Запуск модели Dolphin3.0 через Ray Application
+
+Для запуска модели **Dolphin3.0** (доступна по адресу [Valdemardi/Dolphin3.0-R1-Mistral-24B-AWQ](https://huggingface.co/Valdemardi/Dolphin3.0-R1-Mistral-24B-AWQ)) в Ray-кластере мы используем **Ray Application**.
+Данный механизм указывает Ray Serve, какие файлы брать, какую модель загружать и под какими настройками параллелизации (tensor/pipeline) работать.
+
+-----------------------------------------------------------------------------
+
+## Пример JSON-запроса к Ray Dashboard
+
+Отправляем POST-запрос на `https://ray-dashboard.k8s.example.com/api/serve/applications/` с телом:
+
+```json
+{
+  "applications": [
+    {
+      "import_path": "serve:model",
+      "name": "Dolphin3.0",
+      "route_prefix": "/",
+      "autoscaling_config": {
+        "min_replicas": 1,
+        "initial_replicas": 1,
+        "max_replicas": 1
+      },
+      "deployments": [
+        {
+          "name": "VLLMDeployment",
+          "num_replicas": 1,
+          "ray_actor_options": {},
+          "deployment_ready_timeout_s": 1200
+        }
+      ],
+      "runtime_env": {
+        "working_dir": "file:///home/ray/serve.zip",
+        "env_vars": {
+          "MODEL_ID": "Valdemardi/Dolphin3.0-R1-Mistral-24B-AWQ",
+          "TENSOR_PARALLELISM": "1",
+          "PIPELINE_PARALLELISM": "2",
+          "MODEL_NAME": "Dolphin3.0"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Ключевые моменты
+
+1. **import_path**: `"serve:model"`
+   - Указывает Ray, что в архиве (working_dir) находится Python-модуль `serve.py`, в котором определён объект `model`.
+   - Именно он разворачивается как Ray Serve Deployment.
+
+2. **name**: `"Dolphin3.0"`
+   - Имя приложения в Ray Dashboard, чтобы легко отличать его от других.
+
+3. **route_prefix**: `"/"`
+   - Базовый путь, по которому будет доступен сервис (при наличии Ingress или сервисов).
+
+4. **autoscaling_config**
+   - min_replicas, initial_replicas, max_replicas задают политику масштабирования. В примере — 1 реплика (без автоскейла).
+
+5. **deployments**
+   - Здесь описан `VLLMDeployment` с num_replicas = 1. Это класс/обёртка vLLM в `serve.py`.
+   - `deployment_ready_timeout_s = 1200` даёт время (20 минут) на инициализацию модели (полезно при больших загрузках).
+
+6. **runtime_env**
+   - `working_dir: "file:///home/ray/serve.zip"` говорит Ray, где лежит код (скрипты `serve.py`, `auth.py`).
+   - `env_vars`: задаём переменные окружения для vLLM:
+     - `"MODEL_ID"`: название модели на Hugging Face — здесь "Valdemardi/Dolphin3.0-R1-Mistral-24B-AWQ".
+     - `"TENSOR_PARALLELISM"` и `"PIPELINE_PARALLELISM"`: регламентируют шардирование и конвейерную параллельность.
+     - `"MODEL_NAME"`: отображается в ответах API как название модели.
+
+-----------------------------------------------------------------------------
+
+## Результат деплоя и вид в Ray Dashboard
+
+После успешного запроса Ray:
+1. Извлекает файлы из `serve.zip` и создаёт Ray Serve Application под именем «Dolphin3.0».
+2. В разделе Deployments появляется `VLLMDeployment`. vLLM инициализируется, подгружая Dolphin3.0 из Hugging Face.
+3. При желании можно просмотреть логи, где будет видно, как vLLM скачивает вес модели и запускает инференс.
+
+С этого момента **модель Dolphin3.0 готова к приёму запросов** на OpenAI-совместимые эндпоинты (например, `/v1/chat/completions`),
+используя конфигурацию параллелизации (tensor/pipeline), указанную в env_vars.
 
 ![dashboard_serve](img/dashboard_serve.png)
 
