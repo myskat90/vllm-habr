@@ -1,0 +1,395 @@
+# Default values for ray-cluster.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# The KubeRay community welcomes PRs to expose additional configuration
+# in this Helm chart.
+
+image:
+  repository: gitlab.example.com:5050/it-operations/k8s-config/vllm-0.6.5-ray-2.42.0-py310-cu121-serve
+  tag: 1.1.2
+  pullPolicy: IfNotPresent
+
+nameOverride: "deepseek-raycluster"
+fullnameOverride: "deepseek-raycluster"
+
+imagePullSecrets:
+  - name: regcred
+
+labels:
+    prometheus.deckhouse.io/custom-target: deepseek-raycluster
+annotations:
+  ray.io/enable-serve-service: "true"
+  prometheus.deckhouse.io/port: "8080"
+  prometheus.deckhouse.io/query-param-format: "prometheus"  # По умолчанию ''.
+  prometheus.deckhouse.io/sample-limit: "5000"              # По умолчанию принимается не больше 5000 метрик от одного пода.
+
+# common defined values shared between the head and worker
+common:
+  # containerEnv specifies environment variables for the Ray head and worker containers.
+  # Follows standard K8s container env schema.
+  containerEnv:
+    #  - name: BLAH
+    #    value: VAL
+    - name: HF_HOME
+      value: "/data/model-cache"
+    - name: DTYPE
+      value: "float16" #для AWQ float16
+    - name: GPU_MEMORY_UTIL
+      value: "0.97"
+    - name: MAX_MODEL_LEN
+      value: "32768"
+#    - name: MAX_NUM_SEQS
+#      value: "128"
+#    - name: CPU_OFFLOAD_GB
+#      value: "12.0"
+#    - name: ENABLE_CHUNKED_PREFILL
+#      value: "True"
+#    - name: ENABLE_ENFORCE_EAGER
+#      value: "True"
+#    - name: PYTORCH_CUDA_ALLOC_CONF
+#      value: "expandable_segments:True"
+head:
+  # rayVersion determines the autoscaler's image version.
+  # It should match the Ray version in the image of the containers.
+  rayVersion: "2.42.0"
+  # If enableInTreeAutoscaling is true, the autoscaler sidecar will be added to the Ray head pod.
+  # Ray autoscaler integration is supported only for Ray versions >= 1.11.0
+  # Ray autoscaler integration is Beta with KubeRay >= 0.3.0 and Ray >= 2.0.0.
+  # enableInTreeAutoscaling: true
+  # autoscalerOptions is an OPTIONAL field specifying configuration overrides for the Ray autoscaler.
+  # The example configuration shown below represents the DEFAULT values.
+  # autoscalerOptions:
+    # upscalingMode: Default
+    # idleTimeoutSeconds is the number of seconds to wait before scaling down a worker pod which is not using Ray resources.
+    # idleTimeoutSeconds: 60
+    # imagePullPolicy optionally overrides the autoscaler container's default image pull policy (IfNotPresent).
+    # imagePullPolicy: IfNotPresent
+    # Optionally specify the autoscaler container's securityContext.
+    # securityContext: {}
+    # env: []
+    # envFrom: []
+    # resources specifies optional resource request and limit overrides for the autoscaler container.
+    # For large Ray clusters, we recommend monitoring container resource usage to determine if overriding the defaults is required.
+    # resources:
+    #   limits:
+    #     cpu: "500m"
+    #     memory: "512Mi"
+    #   requests:
+    #     cpu: "500m"
+    #     memory: "512Mi"
+  labels:
+    component: ray-head
+    prometheus.deckhouse.io/custom-target: deepseek-raycluster
+  # Note: From KubeRay v0.6.0, users need to create the ServiceAccount by themselves if they specify the `serviceAccountName`
+  # in the headGroupSpec. See https://github.com/ray-project/kuberay/pull/1128 for more details.
+  serviceAccountName: "sa-deepseek-cluster"
+  restartPolicy: ""
+  rayStartParams:
+    dashboard-host: "0.0.0.0"
+    num-cpus: "0"
+    metrics-export-port: "8080"
+  # containerEnv specifies environment variables for the Ray container,
+  # Follows standard K8s container env schema.
+  containerEnv:
+#   - name: EXAMPLE_ENV
+#     value: "1"
+#    - name: RAY_GRAFANA_IFRAME_HOST
+#      value: http://127.0.0.1:3000
+    - name: RAY_GRAFANA_HOST
+      value: https://prometheus.d8-monitoring:9090
+    - name: RAY_PROMETHEUS_HOST
+      value: https://prometheus.d8-monitoring:9090
+  envFrom:
+   - secretRef:
+       name: auth-config
+  # ports optionally allows specifying ports for the Ray container.
+  # ports: []
+  # resource requests and limits for the Ray head container.
+  # Modify as needed for your application.
+  # Note that the resources in this example are much too small for production;
+  # we don't recommend allocating less than 8G memory for a Ray pod in production.
+  # Ray pods should be sized to take up entire K8s nodes when possible.
+  # Always set CPU and memory limits for Ray pods.
+  # It is usually best to set requests equal to limits.
+  # See https://docs.ray.io/en/latest/cluster/kubernetes/user-guides/config.html#resources
+  # for further guidance.
+  resources:
+    limits:
+      cpu: "6"
+      memory: "8G"
+    requests:
+      cpu: "3"
+      memory: "4G"
+  annotations:
+    ray.io/enable-serve-service: "true"
+    prometheus.deckhouse.io/port: "8080"
+    prometheus.deckhouse.io/query-param-format: "prometheus"  # По умолчанию ''.
+    prometheus.deckhouse.io/sample-limit: "5000"              # По умолчанию принимается не больше 5000 метрик от одного пода.
+  nodeSelector: {}
+  tolerations: []
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: component
+                operator: In
+                values: [ "ray-head" ]
+          topologyKey: "kubernetes.io/hostname"
+  # Pod security context.
+  podSecurityContext: {}
+  # Ray container security context.
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 100
+    runAsNonRoot: true
+  # Optional: The following volumes/volumeMounts configurations are optional but recommended because
+  # Ray writes logs to /tmp/ray/session_latests/logs instead of stdout/stderr.
+  initContainers:
+    - name: fix-permissions
+      image: busybox
+      command: ["sh", "-c", "chown -R 1000:100 /data/model-cache"]
+      volumeMounts:
+        - name: model-cache
+          mountPath: /data/model-cache
+  volumes:
+    - name: log-volume
+      emptyDir: {}
+    - name: model-cache
+      persistentVolumeClaim:
+        claimName: model-cache-pvc
+  volumeMounts:
+    - mountPath: /data/model-cache
+      name: model-cache
+    - mountPath: /tmp/ray
+      name: log-volume
+
+  # sidecarContainers specifies additional containers to attach to the Ray pod.
+  # Follows standard K8s container spec.
+  sidecarContainers: []
+  # See docs/guidance/pod-command.md for more details about how to specify
+  # container command for head Pod.
+  command: []
+  args: []
+  # Optional, for the user to provide any additional fields to the service.
+  # See https://pkg.go.dev/k8s.io/Kubernetes/pkg/api/v1#Service
+  headService:
+    metadata:
+      annotations:
+        ray.io/enable-serve-service: "true"
+
+
+worker:
+  # If you want to disable the default workergroup
+  # uncomment the line below
+  # disabled: true
+  groupName: rtx-3090
+  replicas: 2
+  minReplicas: 2
+  maxReplicas: 2
+  labels:
+    component: ray-worker
+  serviceAccountName: ""
+  restartPolicy: ""
+  rayStartParams:
+    node-ip-address: "$MY_POD_IP"
+  # containerEnv specifies environment variables for the Ray container,
+  # Follows standard K8s container env schema.
+  containerEnv:
+  - name: MY_POD_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
+  envFrom:
+  - secretRef:
+      name: auth-config
+    # - secretRef:
+    #     name: my-env-secret
+  # ports optionally allows specifying ports for the Ray container.
+  # ports: []
+  # resource requests and limits for the Ray head container.
+  # Modify as needed for your application.
+  # Note that the resources in this example are much too small for production;
+  # we don't recommend allocating less than 8G memory for a Ray pod in production.
+  # Ray pods should be sized to take up entire K8s nodes when possible.
+  # Always set CPU and memory limits for Ray pods.
+  # It is usually best to set requests equal to limits.
+  # See https://docs.ray.io/en/latest/cluster/kubernetes/user-guides/config.html#resources
+  # for further guidance.
+  resources:
+    limits:
+      cpu: "16"
+      memory: "24G"
+      nvidia.com/gpu: "1"
+    requests:
+      cpu: "8"
+      memory: "12G"
+      nvidia.com/gpu: "1"
+  annotations: {}
+  nodeSelector:
+    node.deckhouse.io/group: "w-gpu"
+  tolerations:
+    - key: "dedicated.apiac.ru"
+      operator: "Equal"
+      value: "w-gpu"
+      effect: "NoExecute"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: "node.deckhouse.io/group"
+                operator: In
+                values: ["w-gpu"]
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: component
+                operator: In
+                values: ["ray-worker"]
+          topologyKey: "kubernetes.io/hostname"
+  # Pod security context.
+  podSecurityContext: {}
+  # Ray container security context.
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 100
+    runAsNonRoot: true
+  # Optional: The following volumes/volumeMounts configurations are optional but recommended because
+  # Ray writes logs to /tmp/ray/session_latests/logs instead of stdout/stderr.
+  initContainers:
+    - name: fix-permissions
+      image: busybox
+      command: [ "sh", "-c", "chown -R 1000:100 /data/model-cache" ]
+      volumeMounts:
+        - name: model-cache
+          mountPath: /data/model-cache
+  volumes:
+    - name: log-volume
+      emptyDir: {}
+    - name: model-cache
+      persistentVolumeClaim:
+        claimName: model-cache-pvc
+  volumeMounts:
+    - mountPath: /data/model-cache
+      name: model-cache
+    - mountPath: /tmp/ray
+      name: log-volume
+  # sidecarContainers specifies additional containers to attach to the Ray pod.
+  # Follows standard K8s container spec.
+  sidecarContainers: []
+  # See docs/guidance/pod-command.md for more details about how to specify
+  # container command for worker Pod.
+  command: []
+  args: []
+
+# The map's key is used as the groupName.
+# For example, key:small-group in the map below
+# will be used as the groupName
+additionalWorkerGroups:
+  rtx-3060:
+    # Disabled by default
+    disabled: true
+    replicas: 1
+    minReplicas: 1
+    maxReplicas: 1
+    labels:
+      component: ray-worker-3060
+    serviceAccountName: ""
+    restartPolicy: ""
+    rayStartParams:
+      node-ip-address: "$MY_POD_IP"
+    # containerEnv specifies environment variables for the Ray container,
+    # Follows standard K8s container env schema.
+    containerEnv:
+      - name: MY_POD_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+    envFrom:
+      - secretRef:
+          name: auth-config
+    # ports optionally allows specifying ports for the Ray container.
+    # ports: []
+    # resource requests and limits for the Ray head container.
+    # Modify as needed for your application.
+    # Note that the resources in this example are much too small for production;
+    # we don't recommend allocating less than 8G memory for a Ray pod in production.
+    # Ray pods should be sized to take up entire K8s nodes when possible.
+    # Always set CPU and memory limits for Ray pods.
+    # It is usually best to set requests equal to limits.
+    # See https://docs.ray.io/en/latest/cluster/kubernetes/user-guides/config.html#resources
+    # for further guidance.
+    resources:
+      limits:
+        cpu: "16"
+        memory: "24G"
+        nvidia.com/gpu: "1"
+      requests:
+        cpu: "8"
+        memory: "12G"
+        nvidia.com/gpu: "1"
+    annotations: {}
+    nodeSelector:
+      node.deckhouse.io/group: "w-gpu-3060"
+#      kubernetes.io/hostname: "k8s-w4-gpu.apiac.ru"
+    tolerations:
+      - key: "dedicated.apiac.ru"
+        operator: "Equal"
+        value: "w-gpu"
+        effect: "NoExecute"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: "node.deckhouse.io/group"
+                  operator: In
+                  values: [ "w-gpu-3060" ]
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: component
+                  operator: In
+                  values: [ "ray-worker-3060" ]
+            topologyKey: "kubernetes.io/hostname"
+    # Pod security context.
+    podSecurityContext: {}
+    # Ray container security context.
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 100
+      runAsNonRoot: true
+    # Optional: The following volumes/volumeMounts configurations are optional but recommended because
+    # Ray writes logs to /tmp/ray/session_latests/logs instead of stdout/stderr.
+    initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: [ "sh", "-c", "chown -R 1000:100 /data/model-cache" ]
+        volumeMounts:
+          - name: model-cache
+            mountPath: /data/model-cache
+    volumes:
+      - name: log-volume
+        emptyDir: {}
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: model-cache-pvc
+    volumeMounts:
+      - mountPath: /data/model-cache
+        name: model-cache
+      - mountPath: /tmp/ray
+        name: log-volume
+    sidecarContainers: []
+    # See docs/guidance/pod-command.md for more details about how to specify
+    # container command for worker Pod.
+    command: []
+    args: []
+
+# Configuration for Head's Kubernetes Service
+service:
+  # This is optional, and the default is ClusterIP.
+  type: ClusterIP

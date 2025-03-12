@@ -8,10 +8,10 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: 'https://<gitlab-changeme>/it-operations/k8s-config'
+    - repoURL: 'https://gitlab.example.com/it-operations/k8s-config'
       path: 'argo-projects/kube-ray/manifests'
       targetRevision: master
-    - repoURL: 'https://<gitlab-changeme>/it-operations/k8s-config'
+    - repoURL: 'https://gitlab.example.com/it-operations/k8s-config'
       path: 'argo-projects/kube-ray/charts/kuberay-operator'
       targetRevision: master
       helm:

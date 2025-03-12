@@ -109,7 +109,7 @@ spec:
       node.deckhouse.io/group: w-gpu
     taints:
       - effect: NoExecute
-        key: dedicated.apiac.ru
+        key: dedicated.example.com
         value: w-gpu
   chaos:
     mode: Disabled
@@ -133,7 +133,7 @@ spec:
       node.deckhouse.io/group: w-gpu-3060
     taints:
       - effect: NoExecute
-        key: dedicated.apiac.ru
+        key: dedicated.example.com
         value: w-gpu
   chaos:
     mode: Disabled
@@ -302,7 +302,7 @@ spec:
       nvidia.com/gpu.deploy.operands: "false"
     taints:
       - effect: NoExecute
-        key: dedicated.apiac.ru
+        key: dedicated.example.com
         value: w-db
   nodeType: Static
   staticInstances:
@@ -322,7 +322,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w1.apiac.ru
+  name: k8s-w1.example.com
   labels:
     role: worker
     type: standard
@@ -335,7 +335,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w2.apiac.ru
+  name: k8s-w2.example.com
   labels:
     role: worker
     type: standard
@@ -348,7 +348,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w3.apiac.ru
+  name: k8s-w3.example.com
   labels:
     role: worker
     type: standard
@@ -361,7 +361,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w4.apiac.ru
+  name: k8s-w4.example.com
   labels:
     role: worker
     type: standard
@@ -374,7 +374,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w5.apiac.ru
+  name: k8s-w5.example.com
   labels:
     role: worker
     type: standard
@@ -387,7 +387,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w6.apiac.ru
+  name: k8s-w6.example.com
   labels:
     role: worker
     type: standard
@@ -400,7 +400,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w1-db.apiac.ru
+  name: k8s-w1-db.example.com
   labels:
     role: worker
     type: w-db
@@ -413,7 +413,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w2-db.apiac.ru
+  name: k8s-w2-db.example.com
   labels:
     role: worker
     type: w-db
@@ -426,7 +426,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w3-db.apiac.ru
+  name: k8s-w3-db.example.com
   labels:
     role: worker
     type: w-db
@@ -439,7 +439,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w1-gpu.apiac.ru
+  name: k8s-w1-gpu.example.com
   labels:
     role: worker
     type: w-gpu
@@ -452,7 +452,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w2-gpu.apiac.ru
+  name: k8s-w2-gpu.example.com
   labels:
     role: worker
     type: w-gpu
@@ -465,7 +465,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w3-gpu.apiac.ru
+  name: k8s-w3-gpu.example.com
   labels:
     role: worker
     type: w-gpu-3060
@@ -478,7 +478,7 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: k8s-w4-gpu.apiac.ru
+  name: k8s-w4-gpu.example.com
   labels:
     role: worker
     type: w-gpu
@@ -558,7 +558,7 @@ spec:
   # список учётных записей Kubernetes RBAC
   subjects:
     - kind: User
-      name: admin@k8s.apiac.ru
+      name: admin@k8s.example.com
   # предустановленный шаблон уровня доступа
   accessLevel: SuperAdmin
   # разрешить пользователю делать kubectl port-forward
@@ -572,12 +572,12 @@ metadata:
   name: admin
 spec:
   # e-mail пользователя
-  email: admin@k8s.apiac.ru
-  # это хэш пароля cutoxubd8p, сгенерированного сейчас
+  email: admin@k8s.example.com
+  # это хэш пароля caqoxubd7p, сгенерированного сейчас
   # сгенерируйте свой или используйте этот, но только для тестирования
-  # echo "cutoxubd8p" | htpasswd -BinC 10 "" | cut -d: -f2 | base64 -w0
+  # echo "caqoxubd7p" | htpasswd -BinC 10 "" | cut -d: -f2 | base64 -w0
   # возможно, захотите изменить
-  password: 'CRYPT_PWD'
+  password: 'JDJ5JDEwJEpiNU5taU56TnFESXQvdmxlS2RyenV4OEVRcnB2Ui90UEhLVzZQZC85NFpBTjE0VWdpZGpPCgo='
 #
 # Настройка TLS
 ---

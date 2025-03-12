@@ -47,13 +47,13 @@ spec:
     defaultClusterStorageClass: "ceph-rbd-sc"
     modules:
       # Шаблон, который будет использоваться для составления адресов системных приложений в кластере.
-      # Например, Grafana для %s.k8s.apiac.ru будет доступна на домене 'grafana.k8s.apiac.ru'.
+      # Например, Grafana для %s.k8s.example.com будет доступна на домене 'grafana.k8s.example.com'.
       # Домен НЕ ДОЛЖЕН совпадать с указанным в параметре clusterDomain ресурса ClusterConfiguration.
       # Можете изменить на свой сразу, либо следовать шагам руководства и сменить его после установки.
-      publicDomainTemplate: "%s.k8s.apiac.ru"
+      publicDomainTemplate: "%s.k8s.example.com"
       placement:
         customTolerationKeys:
-          - dedicated.apiac.ru
+          - dedicated.example.com
       ingressClass: system-ingress
       https:
         certManager:

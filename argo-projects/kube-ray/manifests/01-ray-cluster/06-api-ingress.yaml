@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openai-api-ext-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: regru-letsencrypt-prod
+#    cert-manager.io/cluster-issuer: inter-ca
+    cert-manager.io/common-name: openai-api.example.com
+#    cert-manager.io/duration: 8760h
+    cert-manager.io/renew-before: 360h
+spec:
+  ingressClassName: external-ingress
+  tls:
+    - hosts:
+        - openai-api.example.com
+      secretName: openai-api-https-cert
+  rules:
+    - host: openai-api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: deepseek-raycluster-serve-svc
+                port:
+                  number: 8000

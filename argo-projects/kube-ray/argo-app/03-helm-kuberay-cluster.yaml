@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kuberay-operator-crds
+  name: kuberay-cluster
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io/foreground
@@ -9,15 +9,20 @@ spec:
   project: default
   sources:
     - repoURL: 'https://gitlab.example.com/it-operations/k8s-config'
-      path: 'argo-projects/kube-ray/charts/kuberay-operator/crds'
+      path: 'argo-projects/kube-ray/charts/ray-cluster'
+      targetRevision: master
+      helm:
+        valueFiles:
+          - ap-values.yaml
+    - repoURL: 'https://gitlab.example.com/it-operations/k8s-config'
+      path: 'argo-projects/kube-ray/manifests/01-ray-cluster'
       targetRevision: master
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: kuberay-operator
+    namespace: kuberay-projects
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - Replace=true
       - CreateNamespace=true

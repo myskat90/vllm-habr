@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ray-dashboard-server-http
+  annotations:
+    cert-manager.io/cluster-issuer: inter-ca
+    cert-manager.io/common-name: ray-dashboard.example.com
+    cert-manager.io/duration: 8760h
+    cert-manager.io/renew-before: 360h
+spec:
+  ingressClassName: system-ingress
+  tls:
+    - hosts:
+        - ray-dashboard.example.com
+      secretName: ray-dashboard-https-cert
+  rules:
+    - host: ray-dashboard.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: deepseek-raycluster-head-svc
+                port:
+                  number: 8265
