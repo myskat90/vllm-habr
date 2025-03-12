@@ -218,7 +218,7 @@ additionalWorkerGroups:
         "working_dir": "file:///home/ray/serve.zip",
         "env_vars": {
           "MODEL_ID": "Valdemardi/Dolphin3.0-R1-Mistral-24B-AWQ",
-          "TENSOR_PARALLELISM": "1",
+          "TENSOR_PARALLELISM": "1", 
           "PIPELINE_PARALLELISM": "2",
           "MODEL_NAME": "Dolphin3.0"
         }
@@ -252,6 +252,8 @@ additionalWorkerGroups:
    - `env_vars`: задаём переменные окружения для vLLM:
      - `"MODEL_ID"`: название модели на Hugging Face — здесь "Valdemardi/Dolphin3.0-R1-Mistral-24B-AWQ".
      - `"TENSOR_PARALLELISM"` и `"PIPELINE_PARALLELISM"`: регламентируют шардирование и конвейерную параллельность.
+       - "TENSOR_PARALLELISM": "1" - на каждой ноде 1 GPU
+       - "PIPELINE_PARALLELISM": "2" - 2 GPU всего в кластере
      - `"MODEL_NAME"`: отображается в ответах API как название модели.
 
 -----------------------------------------------------------------------------
