@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: open-webui
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://gitlab.example.com/it-operations/k8s-config'
+      path: 'argo-projects/kube-ray/charts/open-webui'
+      targetRevision: master
+      helm:
+        valueFiles:
+          - ap-values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: kuberay-projects
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
