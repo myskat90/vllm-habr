@@ -263,7 +263,7 @@ extraEnvVars:
 #  - name: RAG_EMBEDDING_MODEL
 #    value: "deepseek-r1"
   - name: DEFAULT_MODELS
-    value: "Dolphin3.0"
+    value: "Gemma-3-12b"
 #  - name: CUSTOM_NAME
 #    value: "AI.example.ru"
   - name: WEBUI_NAME
