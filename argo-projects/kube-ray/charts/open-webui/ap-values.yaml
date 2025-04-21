@@ -30,7 +30,7 @@ pipelines:
 
 tika:
   # -- Automatically install Apache Tika to extend Open WebUI
-  enabled: false
+  enabled: true
 
 # -- A list of Ollama API endpoints. These can be added in lieu of automatically installing the Ollama Helm chart, or in addition to it.
 ollamaUrls: []
@@ -181,7 +181,7 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: regru-letsencrypt-prod
 #    cert-manager.io/cluster-issuer: inter-ca
-    cert-manager.io/common-name: ai.example.com
+    cert-manager.io/common-name: ai.example.ru
 #    cert-manager.io/duration: 8760h
     cert-manager.io/renew-before: 360h
     nginx.ingress.kubernetes.io/websocket-services: "web-ui"
@@ -193,10 +193,10 @@ ingress:
     nginx.ingress.kubernetes.io/configuration-snippet: |
       more_set_headers "X-Forwarded-For $http_x_forwarded_for";
 #    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-  host: "ai.example.com"
+  host: "ai.example.ru"
   additionalHosts: []
   tls: true
-  existingSecret: "ai-example-com-https-cert"
+  existingSecret: "ai-example-https-cert"
 persistence:
   enabled: true
   size: 10Gi
@@ -242,23 +242,34 @@ service:
   loadBalancerClass: ""
 
 # -- OpenAI base API URL to use. Defaults to the Pipelines service endpoint when Pipelines are enabled, and "https://api.openai.com/v1" if Pipelines are not enabled and this value is blank
-openaiBaseApiUrl: "https://openai-api.example.com/v1"
+openaiBaseApiUrl: "https://openai-api.example.ru/v1"
 
 # -- OpenAI base API URLs to use. Overwrites the value in openaiBaseApiUrl if set
 openaiBaseApiUrls:
-  - "https://openai-api.example.com/v1"
+  - "https://openai-api.example.ru/v1"
 # - "https://api.company.openai.com/v1"
 
 # -- Env vars added to the Open WebUI deployment. Most up-to-date environment variables can be found here: https://docs.openwebui.com/getting-started/env-configuration/
 extraEnvVars:
+  # -- Default API key value for Pipelines. Should be updated in a production deployment, or be changed to the required API key if not using Pipelines
+#  - name: OPENAI_API_KEY
+#    value: "0p3n-w3bu!"
   - name: ENABLE_OPENAI_API
     value: "True"
+#  - name: OPENAI_API_BASE_URL
+#    value: "http://deepseek-raycluster-head-svc:8000/v1/chat/completions"
+#  - name: OPENAI_API_BASE_URLS
+#    value: "http://deepseek-raycluster-serve-svc:8000"
+#  - name: RAG_EMBEDDING_MODEL
+#    value: "deepseek-r1"
   - name: DEFAULT_MODELS
     value: "Dolphin3.0"
+#  - name: CUSTOM_NAME
+#    value: "AI.example.ru"
   - name: WEBUI_NAME
-    value: "AI.example.com"
+    value: "AI.example.ru"
   - name: WEBUI_URL
-    value: "https://ai.example.com"
+    value: "https://ai.example.ru"
   - name: DEFAULT_LOCALE
     value: "ru"
   - name: WEBUI_BANNERS
@@ -267,16 +278,30 @@ extraEnvVars:
     value: "True"
   - name: WEBUI_AUTH_COOKIE_SECURE
     value: "True"
+  - name: ENABLE_OAUTH_SIGNUP
+    value: "True"
   - name: ENABLE_REALTIME_CHAT_SAVE
     value: "True"
   - name: RAG_EMBEDDING_ENGINE
     value: "openai"
+#  - name: RAG_TEMPLATE
+#    value: "0.85"
   - name: ENABLE_LOGIN_FORM
     value: "True"
+#  - name: RAG_TOP_K
+#    value: "50"
+  - name: GOOGLE_REDIRECT_URI
+    value: "https://ai.example.ru/oauth/google/callback"
   - name: CHUNK_SIZE
     value: "2000"
   - name: REQUESTS_CA_BUNDLE
     value: "/etc/ssl/certs/ca-certificates.crt"
+#  - name: TIKA_SERVER_URL
+#    value: "https://tika.example.ru"
+#  - name: CONTENT_EXTRACTION_ENGINE
+#    value: "tika"
+#  - name: TASK_MODEL_EXTERNAL
+#    value: "deepseek-r1"
   # URL вашего backend-сервиса Ray Serve (замените ray-head-service на актуальное имя/адрес)
   # Имя модели, используемой в запросах
   # valueFrom:
@@ -293,6 +318,16 @@ extraEnvVars:
       secretKeyRef:
         name: webui-secret-key
         key: secret-key
+  - name: GOOGLE_CLIENT_ID
+    valueFrom:
+      secretKeyRef:
+        name: google-oauth-creds
+        key: client-id
+  - name: GOOGLE_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: google-oauth-creds
+        key: client-secret
   # - name: OLLAMA_DEBUG
   #   value: "1"
 
@@ -309,6 +344,9 @@ volumeMounts:
    - name: "cacerts"
      mountPath: "/etc/ssl/certs/amazon-root-ca.crt"
      subPath: amazon-root-ca.crt
+   - name: "cacerts"
+     mountPath: "/etc/ssl/certs/inter-ap-ca.crt"
+     subPath: inter-ap-ca.crt
 # -- Configure pod volumes
 # ref: <https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/>
 volumes:

@@ -7,20 +7,33 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 config:
-  base_url: http://localhost/
-fullnameOverride: ""
+  base_url: https://tika.movme.ru
+fullnameOverride: "tika-server"
 image:
   pullPolicy: IfNotPresent
   repository: apache/tika
   tag: 2.9.0.0
 imagePullSecrets: []
 ingress:
-  annotations: {}
-  enabled: false
+  className: external-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: regru-letsencrypt-prod
+#    cert-manager.io/cluster-issuer: inter-ca
+    cert-manager.io/common-name: tika.movme.ru
+#    cert-manager.io/duration: 8760h
+    cert-manager.io/renew-before: 360h
+    nginx.ingress.kubernetes.io/proxy-body-size: 40m
+  enabled: true
   hosts:
-  - host: chart-example.local
-    paths: []
-  tls: []
+  - host: tika.movme.ru
+    paths:
+      - path: /
+        pathType: Prefix
+  tls:
+    - hosts:
+        - tika.movme.ru
+      secretName: tika-https-cert
+
 livenessProbe:
   failureThreshold: 20
   initialDelaySeconds: 15
@@ -43,7 +56,7 @@ readinessProbe:
 replicaCount: 1
 resources:
   limits:
-    cpu: "2"
+    cpu: "4"
     memory: 2000Mi
   requests:
     cpu: "1"
@@ -63,5 +76,5 @@ service:
 serviceAccount:
   annotations: {}
   create: true
-  name: ""
+  name: "tika-sa"
 tolerations: []

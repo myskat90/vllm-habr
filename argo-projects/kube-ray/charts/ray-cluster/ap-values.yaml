@@ -6,8 +6,8 @@
 # in this Helm chart.
 
 image:
-  repository: gitlab.example.com:5050/it-operations/k8s-config/vllm-0.6.5-ray-2.42.0-py310-cu121-serve
-  tag: 1.1.2
+  repository: gitlab.example.com:5050/it-operations/k8s-config/vllm-0.8.4-ray-2.44.0-py310-cu124-serve
+  tag: 1.1.7
   pullPolicy: IfNotPresent
 
 nameOverride: "deepseek-raycluster"
@@ -52,7 +52,7 @@ common:
 head:
   # rayVersion determines the autoscaler's image version.
   # It should match the Ray version in the image of the containers.
-  rayVersion: "2.42.0"
+  rayVersion: "2.44.0"
   # If enableInTreeAutoscaling is true, the autoscaler sidecar will be added to the Ray head pod.
   # Ray autoscaler integration is supported only for Ray versions >= 1.11.0
   # Ray autoscaler integration is Beta with KubeRay >= 0.3.0 and Ray >= 2.0.0.

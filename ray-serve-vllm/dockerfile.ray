@@ -1,18 +1,20 @@
-ARG RAY_IMAGE_VERSION
+ARG RAY_IMAGE_VERSION=2.44.0-py310-cu124
 FROM rayproject/ray:${RAY_IMAGE_VERSION}
+
 ARG VLLM_VERSION
-ARG home_dir="/home/ray"
-WORKDIR ${home_dir}
+ARG HOME_DIR=/home/ray
+WORKDIR ${HOME_DIR}
 
-# Install required packages
 RUN sudo apt-get update && sudo apt-get install -y zip python3-pip
+RUN sudo rm -rf /var/lib/apt/lists/*
 
-# Copy application files
-ADD ./serve.zip .
+# ── копируем код ────────────────────────────────────────────────
+ADD serve.zip .
 
-# Install Python dependencies
-RUN pip install vllm==${VLLM_VERSION} \
-    && pip install httpx \
-    && pip install python-multipart \
-    && pip install PyJWT \
-    && pip freeze > requirements-new.txt
+# ── Python‑зависимости без кеша ────────────────────────────────
+RUN pip install --no-cache-dir --no-compile vllm==${VLLM_VERSION} \
+ && pip install --no-cache-dir --no-compile httpx python-multipart PyJWT \
+ && python -m pip cache purge \
+ && sudo rm -rf /root/.cache /tmp/* /var/tmp/*
+
+RUN pip freeze > requirements-new.txt
