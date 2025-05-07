@@ -14,6 +14,18 @@ spec:
   {{- if .Values.head.enableInTreeAutoscaling }}
   enableInTreeAutoscaling: {{ .Values.head.enableInTreeAutoscaling }}
   {{- end }}
+  {{- if .Values.head.enableGcsFT }}
+  gcsFaultToleranceOptions:
+  {{-   if .Values.head.gcsFT.externalStorageNamespace }}
+    externalStorageNamespace: {{ .Values.head.gcsFT.externalStorageNamespace | quote }}
+  {{-   end }}
+    redisAddress: {{ .Values.head.gcsFT.redisAddress | default "redis:6379" | quote }}
+    redisPassword:
+      valueFrom:
+        secretKeyRef:
+          name: {{ .Values.head.gcsFT.redisSecret.name | default "redis-password-secret" | quote }}
+          key: {{ .Values.head.gcsFT.redisSecret.key  | default "password"                | quote }}
+  {{- end }}
   {{- if .Values.head.autoscalerOptions }}
   autoscalerOptions: {{- toYaml .Values.head.autoscalerOptions | nindent 4 }}
   {{- end }}

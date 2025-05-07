@@ -4,7 +4,7 @@
 
 image:
   repository: quay.io/kuberay/operator
-  tag: v1.2.2
+  tag: nightly
   pullPolicy: IfNotPresent
 
 nameOverride: "kuberay-operator"
@@ -84,7 +84,17 @@ batchScheduler:
 
 featureGates:
   - name: RayClusterStatusConditions
+    enabled: true
+  - name: RayJobDeletionPolicy
     enabled: false
+
+# Configurations for KubeRay operator metrics.
+metrics:
+  # -- Whether KubeRay operator should emit control plane metrics.
+  enabled: true
+
+# -- Path to the operator binary
+operatorCommand: /manager
 
 
 # Set up `securityContext` to improve Pod security.
