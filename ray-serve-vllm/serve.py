@@ -4,11 +4,6 @@ from typing import Dict, Optional, List, Any
 from datetime import datetime, timedelta
 from functools import wraps
 
-# Настраиваем переменные окружения для V1 Engine и Pipeline Parallelism
-os.environ["VLLM_USE_V1"] = "1"
-os.environ["VLLM_USE_ASYNC_COMM"] = "1"  # Включаем асинхронную коммуникацию
-os.environ["VLLM_USE_CUDA_GRAPH"] = "1"  # Включаем CUDA графы для оптимизации
-
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBearer, HTTPAuthorizationCredentials
 from starlette.requests import Request
@@ -17,7 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from ray import serve
 
-# Импорты из vLLM (v0.8.3)
+# Импорты из vLLM (v0.8.4)
 from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.entrypoints.openai.cli_args import make_arg_parser
@@ -92,13 +87,6 @@ class VLLMDeployment:
             # Настройки для Pipeline Parallelism
             engine_args.worker_use_ray = True
             engine_args.distributed_executor_backend = "ray"
-            engine_args.enable_cuda_graph = True  # Включаем CUDA графы
-            engine_args.async_comm = True  # Включаем асинхронную коммуникацию
-
-            # Оптимизации для V1 Engine
-            engine_args.use_v1 = True
-            engine_args.enable_chunked_prefill = True  # Включаем чанкированный префилл
-            engine_args.max_num_batched_tokens = 4096  # Увеличиваем размер батча
 
             logger.info(f"Configured for V1 Engine and Pipeline Parallelism with size {engine_args.pipeline_parallel_size}")
 
@@ -371,7 +359,11 @@ config = {
     "cpu_offload_gb": os.environ.get("CPU_OFFLOAD_GB", 0),
     "max-model-len": int(os.environ.get("MAX_MODEL_LEN", 4096)),
     "max_num_seqs": int(os.environ.get("MAX_NUM_SEQS", 128)),
-    "enforce-eager": os.environ.get("ENABLE_ENFORCE_EAGER", "False").strip().lower() in ["true", "1", "yes"]
+    "enforce-eager": os.environ.get("ENABLE_ENFORCE_EAGER", "False").strip().lower() in ["true", "1", "yes"],
+    "max-seq-len-to-capture": int(os.environ.get("MAX_SEQ_LEN_TO_CAPTURE", "8192")),
+    "swap-space": int(os.environ.get("SWAP_SPACE", "4")),
+    "kv-cache-dtype": os.environ.get("KV_CACHE_DTYPE", "auto"),
+    "max-num-batched-tokens": int(os.environ.get("MAX_NUM_BATCHED_TOKENS", "4096")),
 }
 
 model = build_app(config)
