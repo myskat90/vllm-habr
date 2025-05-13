@@ -1,0 +1,14 @@
+{
+    "version": "2023-08-31",
+    "name": "Gemma-3_correctness_summary",
+    "number_errors": 0,
+    "num_mismatched_requests": 0,
+    "error_rate": 0.0,
+    "mismatch_rate": 0.0,
+    "num_completed_requests": 300,
+    "num_non_errored_requests": 300,
+    "model": "Gemma-3",
+    "num_concurrent_requests": 20,
+    "llm_api": "openai",
+    "timestamp": 1747150352
+}
