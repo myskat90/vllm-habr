@@ -1,17 +1,34 @@
-ARG RAY_IMAGE_VERSION=2.44.0-py310-cu124
+ARG RAY_IMAGE_VERSION=2.49.0.66438d-py312-cu128
 FROM rayproject/ray:${RAY_IMAGE_VERSION}
 
 ARG VLLM_VERSION
 ARG HOME_DIR=/home/ray
 WORKDIR ${HOME_DIR}
 
-RUN sudo apt-get update && sudo apt-get install -y zip python3-pip
-RUN sudo rm -rf /var/lib/apt/lists/*
+# используем bash для удобства && set -e
+SHELL ["/bin/bash","-lc"]
+
+# --- фикс GPG/подписи репозиториев перед обычным apt-get update ---
+# 1) временно обновляем списки даже с битой подписью, чтобы поставить ключи
+# 2) ставим свежие ключи и сертификаты
+# 3) переустанавливаем cuda-keyring
+# 4) переводим источники на HTTPS
+# 5) полноценный update и установка пакетов
+RUN sudo apt-get update -o Acquire::AllowInsecureRepositories=true || true \
+ && sudo apt-get install -y --no-install-recommends ca-certificates gnupg curl ubuntu-keyring \
+ && curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb -o /tmp/cuda-keyring.deb \
+ && sudo dpkg -i /tmp/cuda-keyring.deb \
+ && rm -f /tmp/cuda-keyring.deb \
+ && sudo sed -i 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g; s|http://security.ubuntu.com|https://security.ubuntu.com|g' /etc/apt/sources.list \
+ && sudo apt-get update \
+ && sudo apt-get install -y zip python3-pip \
+ && sudo apt-get clean \
+ && sudo rm -rf /var/lib/apt/lists/*
 
 # ── копируем код ────────────────────────────────────────────────
 ADD serve.zip .
 
-# ── Python‑зависимости без кеша ────────────────────────────────
+# ── Python-зависимости без кеша ────────────────────────────────
 RUN pip install --no-cache-dir --no-compile vllm==${VLLM_VERSION} \
  && pip install --no-cache-dir --no-compile httpx python-multipart PyJWT \
  && python -m pip cache purge \
