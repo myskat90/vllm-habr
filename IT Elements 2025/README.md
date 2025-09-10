@@ -1710,7 +1710,7 @@ curl -s -X POST https://<serve-service-or-ingress>/v1/chat/completions \
 
 ![openwebui-chat](images/openwebui-chat.png)
 
-![gpu-utilization](gpu-utilization.png)
+![gpu-utilization](images/gpu-utilization.png)
 
 ## Диагностика и типовые проблемы
 
