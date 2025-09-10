@@ -104,7 +104,7 @@ spec:
 
 В интерфейсе видим успешно подключенные GPU ноды:
 
-![GPU ноды](images/img.png)
+![GPU ноды](images/GPU_node.png)
 
 ## 2) Установка NVIDIA GPU Operator
 
