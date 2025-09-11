@@ -1244,7 +1244,7 @@ stringData:
   JWT_SECRET:   "very_secret_value"
 ```
 <details>
-<summary>**values.yaml** для кластера:</summary>
+<summary>values.yaml</summary>
 
 ```yaml
 # Default values for ray-cluster.
