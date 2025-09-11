@@ -1589,7 +1589,7 @@ helm upgrade --install llm-raycluster charts/ray-cluster \
 ![pods-on-gpu-nodes](images/pods-on-gpu-nodes.png)
 
 
-## 7) Запуск vLLM‑приложения через Ray Serve API
+## 7) Запуск vLLM-приложения через Ray Serve API
 
 **Endpoint**: `https://ray-dashboard.dkp-ce.apiac.ru/api/serve/applications/`
 
