@@ -893,7 +893,8 @@ dkp-ce-w3.apiac.ru       <none>
 
 Сначала CRD, затем сам оператор (через Argo CD)
 
-**values.yaml**:
+<details>
+<summary>values.yaml</summary>
 
 ```yaml
 # Default values for kuberay-operator.
@@ -1108,8 +1109,9 @@ env:
 # If set to true, the RayJob CR itself will be deleted if shutdownAfterJobFinishes is set to true. Note that all resources created by the RayJob CR will be deleted, including the K8s Job. Otherwise, only the RayCluster CR will be deleted. Default is false.
 # - name: DELETE_RAYJOB_CR_AFTER_JOB_FINISHES
 #   value: "false"
-
 ```
+
+</details>
 
 Проверка:
 ```bash
@@ -1241,8 +1243,8 @@ stringData:
   AUTH_PASSWORD: "admin_password"
   JWT_SECRET:   "very_secret_value"
 ```
-
-**values.yaml** для кластера:
+<details>
+<summary>**values.yaml** для кластера:</summary>
 
 ```yaml
 # Default values for ray-cluster.
@@ -1574,6 +1576,7 @@ service:
   # This is optional, and the default is ClusterIP.
   type: ClusterIP
 ```
+</details>
 
 Установка:
 ```bash
