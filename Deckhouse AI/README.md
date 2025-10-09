@@ -57,6 +57,12 @@
 
 ## Подготовка MCP
 
+В Windows установить uvx:
+
+```shell
+ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
 В LM Studio: **Program → Install → Edit `mcp.json`** — добавьте **два** сервера:
 
 ```json
