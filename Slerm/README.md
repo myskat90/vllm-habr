@@ -2,7 +2,7 @@
 
 ## Практическая часть выступления **Слёрм+Флант**.
 
-Документ описывает пошаговый сценарий развёртывания и демонстрации распределённого инференса LLM на двух узлах с **NVIDIA RTX 3060** в кластере **Deckhouse Kubernetes Platform (DKP)**.
+Документ описывает пошаговый сценарий развёртывания и демонстрации распределённого инференса LLM на двух узлах с **NVIDIA RTX 3090** в кластере **Deckhouse Kubernetes Platform (DKP)**.
 
 Используются:
 - **NVIDIA GPU Operator** (драйверы/плагины/Node Feature Discovery),
@@ -30,9 +30,9 @@
 ## Предварительные требования
 
 - DKP‑кластер с доступом администратора (`kubectl`, `helm`, `argocd`).
-- Две ноды с **NVIDIA RTX 3060** (12 GB) в одной worker‑группе.
+- Две ноды с **NVIDIA RTX 3090** (24GB) в одной worker‑группе.
 - Подтверждённая совместимость версий:
-    - Драйвер **NVIDIA 570.148.08** (или совместимый с CUDA 12.8).
+    - Драйвер **NVIDIA 575.64.03** (или совместимый с CUDA 12.8).
     - Базовый образ Ray: `rayproject/ray:2.49.0.66438d-py312-cu128`.
     - vLLM **0.10.1.1**.
 - Внешний реестр контейнеров (например, GitLab Container Registry) и `imagePullSecret`.
@@ -73,12 +73,12 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: dkp-ce-w1-gpu.apiac.ru
+  name: k8s-w1-gpu.apiac.ru
   labels:
     role: worker
     type: w-gpu
 spec:
-  address: "192.168.2.157"
+  address: "192.168.3.54"
   credentialsRef:
     kind: SSHCredentials
     name: caps
@@ -86,12 +86,12 @@ spec:
 apiVersion: deckhouse.io/v1alpha1
 kind: StaticInstance
 metadata:
-  name: dkp-ce-w2-gpu.apiac.ru
+  name: k8s-w2-gpu.apiac.ru
   labels:
     role: worker
     type: w-gpu
 spec:
-  address: "192.168.2.158"
+  address: "192.168.3.55"
   credentialsRef:
     kind: SSHCredentials
     name: caps
@@ -844,48 +844,59 @@ kubectl -n gpu-operator get pods
 kubectl get nodes -L nvidia.com/gpu.product -L nvidia.com/gpu.present
 kubectl get nodes -o custom-columns=NAME:.metadata.name,GPUs:.status.allocatable.'nvidia\.com/gpu'
 
-NAME                                                              READY   STATUS      RESTARTS   AGE
-dkp-ce--gpu-operator-node-feature-discovery-gc-686d9c89d7-bbnqw   1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-master-74859dflmnvr   1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-worker-7f488          1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-worker-7h8ld          1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-worker-bndcl          1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-worker-dtgz6          1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-worker-htpb7          1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-worker-qnsjp          1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-worker-v6hwc          1/1     Running     0          2m13s
-dkp-ce--gpu-operator-node-feature-discovery-worker-vs72c          1/1     Running     0          2m13s
-gpu-feature-discovery-nptjj                                       2/2     Running     0          2m2s
-gpu-feature-discovery-td4m2                                       2/2     Running     0          2m3s
-gpu-operator-75896c9c58-npdh6                                     1/1     Running     0          2m13s
-nvidia-container-toolkit-daemonset-bnnsq                          1/1     Running     0          2m2s
-nvidia-container-toolkit-daemonset-xlklc                          1/1     Running     0          2m4s
-nvidia-cuda-validator-hjgs7                                       0/1     Completed   0          67s
-nvidia-cuda-validator-rg6rw                                       0/1     Completed   0          61s
-nvidia-device-plugin-daemonset-6pbq7                              2/2     Running     0          2m2s
-nvidia-device-plugin-daemonset-r86n9                              2/2     Running     0          2m4s
-nvidia-operator-validator-7lrgz                                   1/1     Running     0          2m4s
-nvidia-operator-validator-nhs2x                                   1/1     Running     0          2m2s
+NAME                                                          READY   STATUS      RESTARTS        AGE
+gpu-feature-discovery-gvfn4                                   2/2     Running     2 (10d ago)     12d
+gpu-feature-discovery-jdhrn                                   2/2     Running     2 (10d ago)     12d
+gpu-operator-856688bcbb-c6s7k                                 1/1     Running     1 (10d ago)     12d
+gpu-operator-node-feature-discovery-gc-5d95df67f-g68l9        1/1     Running     1 (10d ago)     12d
+gpu-operator-node-feature-discovery-master-59c5d77894-rqjgj   1/1     Running     1 (10d ago)     12d
+gpu-operator-node-feature-discovery-worker-88l44              1/1     Running     5 (12d ago)     12d
+gpu-operator-node-feature-discovery-worker-c89kc              1/1     Running     1 (10d ago)     12d
+gpu-operator-node-feature-discovery-worker-dvrz5              1/1     Running     5 (10d ago)     12d
+gpu-operator-node-feature-discovery-worker-gxjdc              1/1     Running     20 (12d ago)    12d
+gpu-operator-node-feature-discovery-worker-jr29n              1/1     Running     1 (10d ago)     12d
+gpu-operator-node-feature-discovery-worker-mrjsx              1/1     Running     2 (3d23h ago)   12d
+gpu-operator-node-feature-discovery-worker-mrw72              1/1     Running     20 (12d ago)    12d
+gpu-operator-node-feature-discovery-worker-sbggd              1/1     Running     1 (10d ago)     12d
+gpu-operator-node-feature-discovery-worker-tlsnv              1/1     Running     5 (10d ago)     12d
+gpu-operator-node-feature-discovery-worker-ts5wg              1/1     Running     1 (10d ago)     12d
+gpu-operator-node-feature-discovery-worker-zd7s7              1/1     Running     1 (10d ago)     12d
+nvidia-cuda-validator-5zwx8                                   0/1     Completed   0               10d
+nvidia-cuda-validator-ct2s8                                   0/1     Completed   0               10d
+nvidia-device-plugin-daemonset-cvks2                          2/2     Running     2 (10d ago)     12d
+nvidia-device-plugin-daemonset-rfmrz                          2/2     Running     2 (10d ago)     12d
+nvidia-node-status-exporter-9r7xm                             1/1     Running     1 (10d ago)     12d
+nvidia-node-status-exporter-nqh7j                             1/1     Running     1 (10d ago)     12d
+nvidia-operator-validator-97fln                               1/1     Running     1 (10d ago)     12d
+nvidia-operator-validator-tc8d6                               1/1     Running     1 (10d ago)     12d
 
-NAME                     STATUS   ROLES                  AGE     VERSION   GPU.PRODUCT                      GPU.PRESENT
-dkp-ce-m1.apiac.ru       Ready    control-plane,master   11d     v1.31.9                                    
-dkp-ce-m2.apiac.ru       Ready    control-plane,master   11d     v1.31.9                                    
-dkp-ce-m3.apiac.ru       Ready    control-plane,master   11d     v1.31.9                                    
-dkp-ce-w1-gpu.apiac.ru   Ready    w-gpu                  9m46s   v1.31.9   NVIDIA-GeForce-RTX-3060-SHARED   true
-dkp-ce-w1.apiac.ru       Ready    w-std                  10d     v1.31.9                                    
-dkp-ce-w2-gpu.apiac.ru   Ready    w-gpu                  9m47s   v1.31.9                                    true
-dkp-ce-w2.apiac.ru       Ready    w-std                  10d     v1.31.9                                    
-dkp-ce-w3.apiac.ru       Ready    w-std                  10d     v1.31.9                                    
+NAME                  STATUS   ROLES                  AGE    VERSION    GPU.PRODUCT   GPU.PRESENT
+k8s-m1.apiac.ru       Ready    control-plane,master   262d   v1.30.14                 
+k8s-m2.apiac.ru       Ready    control-plane,master   262d   v1.30.14                 
+k8s-m3.apiac.ru       Ready    control-plane,master   166d   v1.30.14                 
+k8s-w1-gpu.apiac.ru   Ready    w-gpu                  2h   v1.30.14                 true
+k8s-w1-vdi.apiac.ru   Ready    w-vdi                  160d   v1.30.14                 
+k8s-w1.apiac.ru       Ready    w-std                  262d   v1.30.14                 
+k8s-w2-gpu.apiac.ru   Ready    w-gpu                  2h   v1.30.14                 true
+k8s-w2.apiac.ru       Ready    w-std                  43d    v1.30.14                 
+k8s-w3.apiac.ru       Ready    w-std                  262d   v1.30.14                 
+k8s-w4.apiac.ru       Ready    w-std                  262d   v1.30.14                 
+k8s-w5.apiac.ru       Ready    w-std                  262d   v1.30.14                 
+k8s-w6.apiac.ru       Ready    w-std                  262d   v1.30.14                                    
 
-NAME                     GPUs
-dkp-ce-m1.apiac.ru       <none>
-dkp-ce-m2.apiac.ru       <none>
-dkp-ce-m3.apiac.ru       <none>
-dkp-ce-w1-gpu.apiac.ru   4
-dkp-ce-w1.apiac.ru       <none>
-dkp-ce-w2-gpu.apiac.ru   4
-dkp-ce-w2.apiac.ru       <none>
-dkp-ce-w3.apiac.ru       <none>
+NAME                  GPUs
+k8s-m1.apiac.ru       <none>
+k8s-m2.apiac.ru       <none>
+k8s-m3.apiac.ru       <none>
+k8s-w1-gpu.apiac.ru   4
+k8s-w1-vdi.apiac.ru   <none>
+k8s-w1.apiac.ru       <none>
+k8s-w2-gpu.apiac.ru   4
+k8s-w2.apiac.ru       <none>
+k8s-w3.apiac.ru       <none>
+k8s-w4.apiac.ru       <none>
+k8s-w5.apiac.ru       <none>
+k8s-w6.apiac.ru       <none>
 ```
 
 ## 3) Установка KubeRay Operator + CRD
@@ -1128,7 +1139,7 @@ rayservices       ray.io/v1             true         RayService
 ## 4) Сборка образа Ray + vLLM + `serve.py` и публикация в Registry
 
 Файлы:
-- `serve.py` — FastAPI + Ray Serve + v9LLM (OpenAI‑совместимые эндпоинты с JWT).
+- `serve.py` — FastAPI + Ray Serve + vLLM (OpenAI‑совместимые эндпоинты с JWT).
 - `dockerfile.ray` — базовый Ray образ + установка vLLM и зависимостей.
 - `Makefile` — упаковка `serve.zip`, сборка, тегирование.
 
@@ -1310,7 +1321,7 @@ head:
   # Включить / выключить высокую доступность GCS
   enableGcsFT: true
   gcsFT:
-    # externalStorageNamespace: ray-gcs-backup
+    # externalStorageNamespace: ray-gcs-backup     # можно опустить → будет тот же NS, что и кластера
     redisAddress: redis:6379                     # адрес Redis‑сервера метаданных
     redisSecret:
       name: redis-password-secret
@@ -1345,7 +1356,7 @@ head:
     prometheus.deckhouse.io/custom-target: llm-raycluster
   # Note: From KubeRay v0.6.0, users need to create the ServiceAccount by themselves if they specify the `serviceAccountName`
   # in the headGroupSpec. See https://github.com/ray-project/kuberay/pull/1128 for more details.
-  serviceAccountName: "sa-llm-cluster"
+  serviceAccountName: "sa-deepseek-cluster"
   restartPolicy: ""
   rayStartParams:
     dashboard-host: "0.0.0.0"
@@ -1446,14 +1457,13 @@ worker:
   # If you want to disable the default workergroup
   # uncomment the line below
   # disabled: true
-  groupName: rtx-3060
+  groupName: rtx-3090
   replicas: 2
   minReplicas: 2
   maxReplicas: 2
   labels:
     component: ray-worker
-    prometheus.deckhouse.io/custom-target: llm-raycluster
-  serviceAccountName: "sa-llm-cluster"
+  serviceAccountName: ""
   restartPolicy: ""
   rayStartParams:
     node-ip-address: "$MY_POD_IP"
@@ -1464,10 +1474,6 @@ worker:
       valueFrom:
         fieldRef:
           fieldPath: status.podIP
-    - name: RAY_GRAFANA_HOST
-      value: https://prometheus.d8-monitoring:9090
-    - name: RAY_PROMETHEUS_HOST
-      value: https://prometheus.d8-monitoring:9090
   envFrom:
     - secretRef:
         name: auth-config
@@ -1569,6 +1575,122 @@ worker:
 # The map's key is used as the groupName.
 # For example, key:small-group in the map below
 # will be used as the groupName
+additionalWorkerGroups:
+  rtx-3060:
+    # Disabled by default
+    disabled: true
+    replicas: 1
+    minReplicas: 1
+    maxReplicas: 1
+    labels:
+      component: ray-worker-3060
+    serviceAccountName: ""
+    restartPolicy: ""
+    rayStartParams:
+      node-ip-address: "$MY_POD_IP"
+    # containerEnv specifies environment variables for the Ray container,
+    # Follows standard K8s container env schema.
+    containerEnv:
+      - name: MY_POD_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+    envFrom:
+      - secretRef:
+          name: auth-config
+    # ports optionally allows specifying ports for the Ray container.
+    # ports: []
+    # resource requests and limits for the Ray head container.
+    # Modify as needed for your application.
+    # Note that the resources in this example are much too small for production;
+    # we don't recommend allocating less than 8G memory for a Ray pod in production.
+    # Ray pods should be sized to take up entire K8s nodes when possible.
+    # Always set CPU and memory limits for Ray pods.
+    # It is usually best to set requests equal to limits.
+    # See https://docs.ray.io/en/latest/cluster/kubernetes/user-guides/config.html#resources
+    # for further guidance.
+    resources:
+      limits:
+        cpu: "16"
+        memory: "24G"
+        nvidia.com/gpu: "1"
+      requests:
+        cpu: "8"
+        memory: "12G"
+        nvidia.com/gpu: "1"
+    annotations: {}
+    nodeSelector:
+      node.deckhouse.io/group: "w-gpu-3060"
+    #      kubernetes.io/hostname: "k8s-w4-gpu.apiac.ru"
+    tolerations:
+      - key: "dedicated.apiac.ru"
+        operator: "Equal"
+        value: "w-gpu"
+        effect: "NoExecute"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: "node.deckhouse.io/group"
+                  operator: In
+                  values: [ "w-gpu-3060" ]
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: component
+                  operator: In
+                  values: [ "ray-worker-3060" ]
+            topologyKey: "kubernetes.io/hostname"
+    # Pod security context.
+    podSecurityContext: {}
+    # Ray container security context.
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 100
+      runAsNonRoot: true
+    # Optional: The following volumes/volumeMounts configurations are optional but recommended because
+    # Ray writes logs to /tmp/ray/session_latests/logs instead of stdout/stderr.
+    initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: [ "sh", "-c", "chown -R 1000:100 /data/model-cache" ]
+        volumeMounts:
+          - name: model-cache
+            mountPath: /data/model-cache
+    volumes:
+      - name: log-volume
+        emptyDir: {}
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: model-cache-pvc
+    volumeMounts:
+      - mountPath: /data/model-cache
+        name: model-cache
+      - mountPath: /tmp/ray
+        name: log-volume
+    sidecarContainers: []
+    # See docs/guidance/pod-command.md for more details about how to specify
+    # container command for worker Pod.
+    command: []
+    args: []
+
+    # Topology Spread Constraints for worker pods
+    # See: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+    topologySpreadConstraints: []
+
+    # Custom pod DNS configuration
+    # See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+    # dnsConfig:
+    #   nameservers:
+    #     - 8.8.8.8
+    #   searches:
+    #     - example.local
+    #   options:
+    #     - name: ndots
+    #       value: "2"
+    #     - name: edns0
 
 # Configuration for Head's Kubernetes Service
 service:
@@ -1591,7 +1713,7 @@ helm upgrade --install llm-raycluster charts/ray-cluster \
 
 ## 7) Запуск vLLM-приложения через Ray Serve API
 
-**Endpoint**: `https://ray-dashboard.dkp-ce.apiac.ru/api/serve/applications/`
+**Endpoint**: `https://ray-dashboard.k8s.apiac.ru/api/serve/applications/`
 
 **Запрос:**
 ```json
@@ -1599,7 +1721,7 @@ helm upgrade --install llm-raycluster charts/ray-cluster \
   "applications": [
     {
       "import_path": "serve:model",
-      "name": "gemma-3",
+      "name": "Gemma-3-12b",
       "route_prefix": "/",
       "autoscaling_config": {
         "min_replicas": 1,
@@ -1618,11 +1740,11 @@ helm upgrade --install llm-raycluster charts/ray-cluster \
       "runtime_env": {
         "working_dir": "file:///home/ray/serve.zip",
         "env_vars": {
-          "MODEL_ID": "gaunernst/gemma-3-12b-it-int4-awq",
+          "MODEL_ID": "google/gemma-3-12b-it",
           "TENSOR_PARALLELISM": "1",
           "PIPELINE_PARALLELISM": "2",
-          "MODEL_NAME": "gemma-3-12b-2xrtx3060",
-          "MAX_MODEL_LEN": "32768",
+          "MODEL_NAME": "gemma-3-12b",
+          "MAX_MODEL_LEN": "131072",
           "MAX_NUM_SEQS": "256",
           "ENABLE_ENFORCE_EAGER": "False",
           "CPU_OFFLOAD_GB": "0",
@@ -1630,10 +1752,11 @@ helm upgrade --install llm-raycluster charts/ray-cluster \
           "GPU_MEMORY_UTIL": "0.9",
           "MAX_NUM_BATCHED_TOKENS": "2048",
           "MAX_SEQ_LEN_TO_CAPTURE": "32768",
+          // "SWAP_SPACE": "16",
           "KV_CACHE_DTYPE": "auto",
           "ENABLE_CHUNKED_PREFILL": "True",
           "VLLM_USE_V1": "1",
-          "VLLM_ATTENTION_BACKEND": "FLASH_ATTN_VLLM_V1"
+          "VLLM_ATTENTION_BACKEND": "FLASH_ATTN_VLLM_V1
         }
       }
     }
@@ -1646,12 +1769,12 @@ helm upgrade --install llm-raycluster charts/ray-cluster \
 curl -X PUT \
   -H "Content-Type: application/json" \
   --data @deploy-gemma3.json \
-  https://ray-dashboard.dkp-ce.apiac.ru/api/serve/applications/
+  https://ray-dashboard.k8s.apiac.ru/api/serve/applications/
 ```
 
 Проверка статуса:
 ```bash
-curl -s https://ray-dashboard.dkp-ce.apiac.ru/api/serve/applications/ | jq .
+curl -s https://ray-dashboard.k8s.apiac.ru/api/serve/applications/ | jq .
 ```
 
 ![LLM Load](images/llm_load.png)
@@ -1673,7 +1796,7 @@ curl -s -X POST https://<serve-service-or-ingress>/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gemma-3-12b-2xrtx3060",
+    "model": "gemma-3-12b",
     "messages": [{"role": "user", "content": "Кратко опиши Ray Serve и vLLM."}],
     "temperature": 0.2,
     "stream": false
@@ -1702,7 +1825,7 @@ curl -s -X POST https://<serve-service-or-ingress>/v1/chat/completions \
 ## 9) Демонстрация инференса
 
 Сценарий живого демо:
-1. В OpenWebUI выбрать модель `gemma-3-12b-2xrtx3060`.
+1. В OpenWebUI выбрать модель `gemma-3-12b`.
 2. Отправить 1–2 показательных промпта (краткая аналитика/код/объяснение).
 3. Параллельно показать в Ray Dashboard графики акторов/реплик, загрузку GPU в `nvidia-smi` и метрики Prometheus (если подключено).
 
