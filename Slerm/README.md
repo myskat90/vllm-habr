@@ -29,7 +29,7 @@
 
 ## Предварительные требования
 
-- [DKP‑кластер](https://github.com/deckhouse/deckhouse) с доступом администратора (`kubectl`, `helm`, `argocd`).
+- [DKP-CE‑кластер](https://github.com/deckhouse/deckhouse) с доступом администратора: [быстрая установка](https://deckhouse.ru/products/kubernetes-platform/gs/#gui-install) (`kubectl`, `helm`, `argocd`).
 - Две ноды с **NVIDIA RTX 3090** (24GB) в одной worker‑группе.
 - Подтверждённая совместимость версий:
     - Драйвер **NVIDIA 575.64.03** (или совместимый с CUDA 12.8).
