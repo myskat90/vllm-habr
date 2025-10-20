@@ -1752,11 +1752,10 @@ helm upgrade --install llm-raycluster charts/ray-cluster \
           "GPU_MEMORY_UTIL": "0.9",
           "MAX_NUM_BATCHED_TOKENS": "2048",
           "MAX_SEQ_LEN_TO_CAPTURE": "32768",
-          // "SWAP_SPACE": "16",
           "KV_CACHE_DTYPE": "auto",
           "ENABLE_CHUNKED_PREFILL": "True",
           "VLLM_USE_V1": "1",
-          "VLLM_ATTENTION_BACKEND": "FLASH_ATTN_VLLM_V1
+          "VLLM_ATTENTION_BACKEND": "FLASH_ATTN_VLLM_V1"
         }
       }
     }
